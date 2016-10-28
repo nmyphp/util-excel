@@ -1,1 +1,2 @@
-# maven-web-project
+
+maven-web-project is a framework.
