@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.ClassUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,13 +19,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.commons.CommonsMultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.dang.web_test.dto.User;
+import com.dang.web_test.service.UserService;
+
 import util.excel.apply.ExcelUtil;
 import util.excel.comm.ExcelColumn;
 import util.excel.comm.ExcelHead;
-import util.excel.comm.ImportResult;
-
-import com.dang.web_test.dto.User;
-import com.dang.web_test.service.UserService;
+import util.excel.comm.TransResult;
 
 
 @Controller
@@ -58,7 +59,8 @@ public class UserController {
     @RequestMapping(value = "/downloadTemplate", method = RequestMethod.GET)
     public void downloadTemplate(HttpServletResponse response){
     	try{
-    	    ExcelUtil.getTemplate(response);
+			String filePath = ClassUtils.getDefaultClassLoader().getResource("/template").getPath() + File.separator + "template.xlsx";
+			ExcelUtil.downloadExcel(response, filePath);
     	}catch(Exception e){
     		logger.error(e.getMessage(),e);
     	}
@@ -67,13 +69,12 @@ public class UserController {
     @RequestMapping(value = "/import", method = RequestMethod.POST)
     public void import2(@RequestParam("uploadExcel") CommonsMultipartFile uploadExcel, HttpServletRequest request){
     	try{
-    		String errorFilePath = request.getSession().getServletContext().getRealPath("/") + "errorExcel";
-    		List<ExcelColumn> excelColumns = new ArrayList<ExcelColumn> ();
+    		List<ExcelColumn> excelColumns = new ArrayList<> ();
     		excelColumns.add(new ExcelColumn("id","编号"));
     		excelColumns.add(new ExcelColumn("name","姓名"));
     		ExcelHead excelHead = new ExcelHead();
     		excelHead.setColumns(excelColumns);
-    		ImportResult<User> result = ExcelUtil.importExcel(uploadExcel, excelHead, request, User.class, errorFilePath);
+			TransResult<User> result = ExcelUtil.trans2Object(uploadExcel, excelHead, User.class);
     		if(!result.getSuccess()){
     			logger.error(new ObjectMapper().writeValueAsString(result));
     		}else{
@@ -87,11 +88,11 @@ public class UserController {
     @RequestMapping(value = "/export", method = RequestMethod.GET)
     public void export(HttpServletResponse response){
     	try{
-    		List<ExcelColumn> excelColumns = new ArrayList<ExcelColumn> ();
+    		List<ExcelColumn> excelColumns = new ArrayList<> ();
     		excelColumns.add(new ExcelColumn("id","编号"));
     		excelColumns.add(new ExcelColumn("name","姓名"));
     		List<User> users = userService.getAllUser();
-    		ExcelUtil.export2Excel(excelColumns, response, users);
+    		ExcelUtil.trans2Excel(excelColumns, response, users);
     	}catch(Exception e){
     		logger.error(e.getMessage(),e);
     	}
@@ -102,7 +103,7 @@ public class UserController {
     	try{
     		String errorPath = request.getSession().getServletContext().getRealPath("/") + "errorExcel";
     		String errorFile = errorPath + File.separator + errorFileName;
-    		ExcelUtil.getErrorExcel(response, errorFile);
+    		ExcelUtil.downloadExcel(response, errorFile);
     	}catch(Exception e){
     		logger.error(e.getMessage(),e);
     	}
