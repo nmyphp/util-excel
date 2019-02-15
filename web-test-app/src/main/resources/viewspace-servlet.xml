@@ -11,7 +11,8 @@
     <!-- 默认处理 -->
     <!-- <mvc:default-servlet-handler/> -->
     
-    <bean id="mappingJacksonHttpMessageConverter" class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter">
+    <bean id="mappingJacksonHttpMessageConverter"
+		class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
 		<property name="supportedMediaTypes">
 			<list>
 				<value>text/html;charset=UTF-8</value>
@@ -34,11 +35,18 @@
     <mvc:resources mapping="/css/**" location="/css/" />
     <mvc:resources mapping="/js/**" location="/js/" />
     <mvc:resources mapping="/img/**" location="/img/" />
+	<mvc:interceptors>
+		<mvc:interceptor>
+			<mvc:mapping path="/**"/>
+			<bean class="com.qihoo.bigdata.qsso.client.java.SsoInterceptor"></bean>
+		</mvc:interceptor>
+	</mvc:interceptors>
     
     <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
         <property name="prefix" value="/page/" />
         <property name="suffix" value=".jsp" />
     </bean>
     
-    <import resource="classpath:spring.xml" />	
+    <import resource="classpath:spring.xml" />
+	<context:component-scan base-package="com.qihoo.bigdata.qsso.client.java"/>
 </beans>

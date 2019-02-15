@@ -13,11 +13,12 @@
 			<groupId>com.dang</groupId>
 			<artifactId>web-test-controller</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>com.dang</groupId>
-			<artifactId>web-test-dto</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>spring-web</artifactId>
+					<groupId>org.springframework</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>jstl</groupId>

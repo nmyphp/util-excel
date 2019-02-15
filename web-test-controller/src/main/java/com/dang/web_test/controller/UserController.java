@@ -1,5 +1,9 @@
 package com.dang.web_test.controller;
 
+import com.free.util.excel.apply.ExcelUtil;
+import com.free.util.excel.comm.ExcelColumn;
+import com.free.util.excel.comm.ExcelHead;
+import com.free.util.excel.comm.TransResult;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,18 +26,13 @@ import org.springframework.web.servlet.ModelAndView;
 import com.dang.web_test.dto.User;
 import com.dang.web_test.service.UserService;
 
-import util.excel.apply.ExcelUtil;
-import util.excel.comm.ExcelColumn;
-import util.excel.comm.ExcelHead;
-import util.excel.comm.TransResult;
-
 
 @Controller
 public class UserController {
     // 日志
     private static final Logger logger = Logger.getLogger(UserController.class);
 
-    @Resource
+	@Resource
     private UserService userService;
 
     @RequestMapping(value = "/showuser", method = RequestMethod.GET)

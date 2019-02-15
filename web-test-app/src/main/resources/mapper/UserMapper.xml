@@ -23,7 +23,7 @@ PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN"
     <!-- 根据主键查询 -->
     <select id="findAll" resultMap="RM_User">
 		SELECT id,name
-	    FROM Users
+	    FROM user
 	    LIMIT 100
 	</select>
 </mapper>

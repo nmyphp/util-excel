@@ -7,7 +7,7 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<properties>
-		<spring.version>3.2.9.RELEASE</spring.version>
+		<spring.version>4.3.12.RELEASE</spring.version>
 		<slf4j-log4j12.version>1.7.7</slf4j-log4j12.version>
 		<slf4j-api.version>1.7.7</slf4j-api.version>
 		<log4j.version>1.2.16</log4j.version>
@@ -31,11 +31,6 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>${slf4j-api.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-log4j12</artifactId>
 			<version>${slf4j-log4j12.version}</version>
 		</dependency>
@@ -55,11 +50,6 @@
 			<version>${spring.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>log4j</groupId>
-			<artifactId>log4j</artifactId>
-			<version>${log4j.version}</version>
-		</dependency>
-		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
 			<version>${mysql.version}</version>
@@ -76,12 +66,6 @@
 		</dependency>
 		<dependency>
 			<groupId>org.mybatis</groupId>
-			<artifactId>mybatis</artifactId>
-			<version>${mybatis.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.mybatis</groupId>
 			<artifactId>mybatis-spring</artifactId>
 			<version>${mybatis.spring.version}</version>
 		</dependency>
@@ -94,6 +78,12 @@
 			<groupId>com.github.miemiedev</groupId>
 			<artifactId>mybatis-paginator</artifactId>
 			<version>${mybatis-paginator.version}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>slf4j-api</artifactId>
+					<groupId>org.slf4j</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 		  <groupId>org.codehaus.jackson</groupId>
@@ -169,9 +159,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
-				<configuration>
-					<encoding>UTF-8</encoding>
-				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.tomcat.maven</groupId>
