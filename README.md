@@ -98,4 +98,4 @@ public void export(HttpServletResponse response){
 
 >更多详细内容请参考util-excel-demo，运行util-excel-demo，然后访问：http://localhost:8080/test
 
-![运行示例](https://github.com/nmyphp/util-excel-parent/blob/master/doc/demo.jpg)
+![运行示例](https://github.com/nmyphp/util-excel/blob/master/doc/demo.jpg)
