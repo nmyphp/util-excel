@@ -1,12 +1,8 @@
 package com.free.util.excel.apply;
 
-import com.free.util.excel.comm.ConvertResult;
-import com.free.util.excel.comm.ErrorType;
 import com.free.util.excel.comm.ExcelColumn;
 import com.free.util.excel.comm.ExcelHead;
-import com.free.util.excel.comm.OperationType;
 import com.free.util.excel.comm.StringUtil;
-import com.free.util.excel.comm.TransResult;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.DataFormat;
@@ -61,7 +57,12 @@ public class ExcelUtil {
      */
     public static <T> void object2Excel(List<ExcelColumn> header, List<T> oriObjects, String desFile)
         throws Exception {
-        OutputStream out = new FileOutputStream(desFile);
+        File file = new File(desFile);
+        if (file.exists()) {
+            file.delete();
+        }
+        file.createNewFile();
+        OutputStream out = new FileOutputStream(file);
         try {
             Workbook wb = new XSSFWorkbook();
             Sheet sheet = wb.createSheet();
@@ -105,52 +106,46 @@ public class ExcelUtil {
      * Excel文件转成Java对象集合
      *
      * @param excelHead Excel表头
-     * @param oriFile 源文件
+     * @param oriFile   源文件
      * @param clazz     对象class
      */
-    public static <T> TransResult<T> excel2Object(String oriFile, ExcelHead excelHead, Class<T> clazz)
+    public static <T> List<T> excel2Object(String oriFile, ExcelHead excelHead, Class<T> clazz)
         throws Exception {
 
         File file = new File(oriFile);
         if (!file.exists()) {
             throw new FileNotFoundException("找不到文件" + oriFile);
         }
-        TransResult<T> result = new TransResult<T>();
-        ConvertResult<T> mapRtn = null;
-        List<ConvertResult<T>> mapList = new ArrayList<ConvertResult<T>>(200);
         Workbook wb = WorkbookFactory.create(copy(new FileInputStream(file)));
         Sheet sheet = wb.getSheetAt(0);
-        Boolean success = true;
         // 校验Excel文件的列是否合法
+        StringBuilder errorInfo = new StringBuilder();
         Row columnRow = sheet.getRow(excelHead.getStartTitleRow());
         List<ExcelColumn> colunms = excelHead.getColumns();
         for (int j = excelHead.getStartColumn(), length = excelHead.getColumns().size(); j < length; j++) {
-            if (!columnRow.getCell(j).getStringCellValue().equals(colunms.get(j).getTitleName())) {
-                result.setSuccess(false);
-                result.setErrorType(ErrorType.HEAD_ERROR);
-                result.setMsg("Excel文件格式[列名]不正确，请检查文件后重新上传");
-                result.setEntities(null);
-                return result;
+            String cellValue = columnRow.getCell(j).getStringCellValue();
+            String titleName = colunms.get(j).getTitleName();
+            if (!cellValue.equals(titleName)) {
+                String error = String.format("Excel列名和指定的列明无法对应[excelCellName:%s,ColumnName:%s]", cellValue, titleName);
+                errorInfo.append(error).append("\n");
             }
         }
-        T entity = null;
+        if (errorInfo.length() > 0) {
+            throw new RuntimeException(errorInfo.toString());
+        }
+        // 数据读取并转换
+        List<T> result = new ArrayList<>(200);
         for (int i = excelHead.getStartDataRow(), length = sheet.getPhysicalNumberOfRows(); i < length; i++) {
-            entity = (T) clazz.newInstance();
+            T entity = clazz.newInstance();
             Row row = sheet.getRow(i);
             // 跳过空行
             if (!emptyRow(row, excelHead.getStartColumn())) {
-                mapRtn = parseExcelRow(row, excelHead, entity, DATE_PATTERN);
-                if (!mapRtn.getSuccess()) {
-                    success = false;
-                }
-                mapList.add(mapRtn);
+                parseExcelRow(row, excelHead, entity, DATE_PATTERN, errorInfo);
+                result.add(entity);
             }
         }
-        result.setEntities(mapList);
-        if (!success) {
-            result.setSuccess(false);
-            result.setErrorType(ErrorType.DATA_ERROR);
-            result.setMsg("Excel数据解析失败");
+        if (errorInfo.length() > 0) {
+            throw new RuntimeException(errorInfo.toString());
         }
         return result;
     }
@@ -162,67 +157,61 @@ public class ExcelUtil {
      * @param excelHead  上传文件的Excel列结构
      * @param entity     关联实体类class
      * @param dateFormat 日期格式如：yyyy-MM-dd HH:mm:ss
+     * @param errorInfo  转换的错误信息
      */
-    private static <T> ConvertResult<T> parseExcelRow(Row row, ExcelHead excelHead, T entity, String dateFormat) {
-        ConvertResult<T> result = new ConvertResult<T>();
-        Boolean success = true;
-        StringBuffer errorConvertField = new StringBuffer();
-        StringBuffer errorArgumentField = new StringBuffer();
-        String cellValue = "";
+    private static <T> void parseExcelRow(Row row, ExcelHead excelHead, T entity, String dateFormat,
+                                          StringBuilder errorInfo) {
         SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
         int startColumn = excelHead.getStartColumn();
         List<ExcelColumn> excelColunms = excelHead.getColumns();
         for (int j = startColumn, cellNum = row.getLastCellNum(); j < cellNum; j++) {
             String fieldName = excelColunms.get(j - startColumn).getFieldName();
             String fieldDispName = excelColunms.get(j - startColumn).getTitleName();
-            cellValue = getCellValue(row.getCell(j));
+            String cellValue = getCellValue(row.getCell(j));
+            if (StringUtil.isEmpty(cellValue)) {
+                continue;
+            }
             try {
                 Field field = entity.getClass().getDeclaredField(fieldName);
-                String clsType = field.getType().toString();
+                Class clsType = field.getType();
                 field.setAccessible(true);
-                if ("class java.lang.String".equals(clsType)) {
+                if (String.class == clsType) {
                     field.set(entity, cellValue);
-                } else if ("class java.lang.Integer".equals(clsType) || "int".equals(clsType)) {
-                    field.set(entity, "".equals(cellValue) ? null : Integer.parseInt(cellValue));
-                } else if ("class java.lang.Long".equals(clsType)) {
-                    field.set(entity, "".equals(cellValue) ? null : Long.parseLong(cellValue));
-                } else if ("class java.lang.Boolean".equals(clsType)) {
-                    field.set(entity, "".equals(cellValue) ? null : Boolean.parseBoolean(cellValue));
-                } else if ("float".equals(clsType)) {
-                    field.set(entity, "".equals(cellValue) ? null : Float.parseFloat(cellValue));
-                } else if ("class java.lang.Double".equals(clsType)) {
-                    field.set(entity, "".equals(cellValue) ? null : Double.parseDouble(cellValue));
-                } else if ("class java.math.BigDecimal".equals(clsType)) {
-                    field.set(entity, "".equals(cellValue) ? null : new BigDecimal(cellValue));
-                } else if ("class java.util.Date".equals(clsType)) {
-                    field.set(entity, "".equals(cellValue) ? null : sdf.parse(cellValue));
+                } else if (Integer.class == clsType || "int".equals(clsType.getName())) {
+                    field.set(entity, Integer.parseInt(cellValue));
+                } else if (Long.class == clsType || "long".equals(clsType.getName())) {
+                    field.set(entity, Long.parseLong(cellValue));
+                } else if (Boolean.class == clsType || "boolean".equals(clsType.getName())) {
+                    field.set(entity, Boolean.parseBoolean(cellValue));
+                } else if (Float.class == clsType || "float".equals(clsType.getName())) {
+                    field.set(entity, Float.parseFloat(cellValue));
+                } else if (Double.class == clsType || "double".equals(clsType.getName())) {
+                    field.set(entity, Double.parseDouble(cellValue));
+                } else if (BigDecimal.class == clsType) {
+                    field.set(entity, new BigDecimal(cellValue));
+                } else if (Date.class == clsType) {
+                    field.set(entity, sdf.parse(cellValue));
+                } else if ("char".equals(clsType.getName())) {
+                    field.set(entity, cellValue.charAt(0));
                 } else {
                     field.set(entity, cellValue);
                 }
             } catch (NoSuchFieldException ex) {
-                success = false;
-                errorArgumentField.append("[" + fieldDispName + ":" + cellValue + "]");
-            } catch (IllegalArgumentException ex) {
-                success = false;
-                errorConvertField.append("[" + fieldDispName + ":" + cellValue + "]");
-            } catch (Exception e) {
-                success = false;
-                errorConvertField.append("[" + fieldDispName + ":" + cellValue + "]");
+                errorInfo.append(MSG_INVALID_ARGUMENT)
+                    .append("[")
+                    .append(fieldDispName).append(":").append(cellValue)
+                    .append("]")
+                    .append(ex.getMessage())
+                    .append("\n");
+            } catch (Exception ex) {
+                errorInfo.append(MSG_INVALID_CONVERT)
+                    .append("[")
+                    .append(fieldDispName).append(":").append(cellValue)
+                    .append("]")
+                    .append(ex.getMessage())
+                    .append("\n");
             }
         }
-        if (!success) {
-            if (errorConvertField.length() > 0) {
-                errorConvertField.insert(0, MSG_INVALID_CONVERT).append("\n");
-            }
-            if (errorArgumentField.length() > 0) {
-                errorArgumentField.insert(0, MSG_INVALID_ARGUMENT).insert(0, errorConvertField);
-            }
-            result.setMsg(errorArgumentField.toString());
-        }
-        result.setSuccess(success);
-        result.setEntity(entity);
-        result.setOperation(OperationType.DATE_PARSE);
-        return result;
     }
 
     /**

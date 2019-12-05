@@ -1,10 +1,12 @@
 package com.free.util.excel.comm;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Setter
 @Getter
+@NoArgsConstructor
 public class ExcelColumn {
     /**
      * 字段名称
@@ -25,40 +27,9 @@ public class ExcelColumn {
      */
     private boolean wrapTextType;
 
-    public ExcelColumn() {
-
-    }
-
-    public ExcelColumn(String fieldName) {
-        super();
-        this.fieldName = fieldName;
-    }
-
     public ExcelColumn(String fieldName, String titleName) {
         super();
         this.fieldName = fieldName;
         this.titleName = titleName;
-    }
-
-    public ExcelColumn(String fieldName, String titleName, int type) {
-        super();
-        this.fieldName = fieldName;
-        this.titleName = titleName;
-        this.type = type;
-    }
-
-    public ExcelColumn(String fieldName, String titleName, int type, boolean wrapTextType) {
-        super();
-        this.fieldName = fieldName;
-        this.titleName = titleName;
-        this.type = type;
-        this.wrapTextType = wrapTextType;
-    }
-
-    public ExcelColumn(String fieldName, String titleName, boolean wrapTextType) {
-        super();
-        this.fieldName = fieldName;
-        this.titleName = titleName;
-        this.wrapTextType = wrapTextType;
     }
 }
