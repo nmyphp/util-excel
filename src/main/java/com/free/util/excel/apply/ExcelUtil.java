@@ -52,17 +52,11 @@ public class ExcelUtil {
      * 将Java实体集合转成Excel文档
      *
      * @param header     字段集合
-     * @param desFile    目标文件的路径
+     * @param out        输出流
      * @param oriObjects 被导出的实体集合
      */
-    public static <T> void object2Excel(List<ExcelColumn> header, List<T> oriObjects, String desFile)
+    public static <T> void object2Excel(List<ExcelColumn> header, List<T> oriObjects, OutputStream out)
         throws Exception {
-        File file = new File(desFile);
-        if (file.exists()) {
-            file.delete();
-        }
-        file.createNewFile();
-        OutputStream out = new FileOutputStream(file);
         try {
             Workbook wb = new XSSFWorkbook();
             Sheet sheet = wb.createSheet();
@@ -103,28 +97,41 @@ public class ExcelUtil {
     }
 
     /**
+     * 将Java实体集合转成Excel文档
+     *
+     * @param header     字段集合
+     * @param desFile    目标文件的路径
+     * @param oriObjects 被导出的实体集合
+     */
+    public static <T> void object2Excel(List<ExcelColumn> header, List<T> oriObjects, String desFile)
+        throws Exception {
+        File file = new File(desFile);
+        if (file.exists()) {
+            file.delete();
+        }
+        file.createNewFile();
+        OutputStream out = new FileOutputStream(file);
+        object2Excel(header, oriObjects, out);
+    }
+
+    /**
      * Excel文件转成Java对象集合
      *
      * @param excelHead Excel表头
-     * @param oriFile   源文件
+     * @param input   文件流
      * @param clazz     对象class
      */
-    public static <T> List<T> excel2Object(String oriFile, ExcelHead excelHead, Class<T> clazz)
+    public static <T> List<T> excel2Object(InputStream input, ExcelHead excelHead, Class<T> clazz)
         throws Exception {
-
-        File file = new File(oriFile);
-        if (!file.exists()) {
-            throw new FileNotFoundException("找不到文件" + oriFile);
-        }
-        Workbook wb = WorkbookFactory.create(copy(new FileInputStream(file)));
+        Workbook wb = WorkbookFactory.create(copy(input));
         Sheet sheet = wb.getSheetAt(0);
         // 校验Excel文件的列是否合法
         StringBuilder errorInfo = new StringBuilder();
         Row columnRow = sheet.getRow(excelHead.getStartTitleRow());
-        List<ExcelColumn> colunms = excelHead.getColumns();
+        List<ExcelColumn> columns = excelHead.getColumns();
         for (int j = excelHead.getStartColumn(), length = excelHead.getColumns().size(); j < length; j++) {
             String cellValue = columnRow.getCell(j).getStringCellValue();
-            String titleName = colunms.get(j).getTitleName();
+            String titleName = columns.get(j).getTitleName();
             if (!cellValue.equals(titleName)) {
                 String error = String.format("Excel列名和指定的列明无法对应[excelCellName:%s,ColumnName:%s]", cellValue, titleName);
                 errorInfo.append(error).append("\n");
@@ -148,6 +155,23 @@ public class ExcelUtil {
             throw new RuntimeException(errorInfo.toString());
         }
         return result;
+    }
+
+    /**
+     * Excel文件转成Java对象集合
+     *
+     * @param excelHead Excel表头
+     * @param oriFile   源文件
+     * @param clazz     对象class
+     */
+    public static <T> List<T> excel2Object(String oriFile, ExcelHead excelHead, Class<T> clazz)
+        throws Exception {
+
+        File file = new File(oriFile);
+        if (!file.exists()) {
+            throw new FileNotFoundException("找不到文件" + oriFile);
+        }
+        return excel2Object(new FileInputStream(file), excelHead, clazz);
     }
 
     /**
